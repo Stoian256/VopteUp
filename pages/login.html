@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    <title>Login</title>
+    <link rel="icon" href="../static/logo/logo-black.png" type="image/png">
+    <link rel="stylesheet" type="text/css" href="../static/css/loginStyle.css">
+</head>
+<body>
+<div class="container">
+    <h1>Autentificare</h1>
+    <div id="error-message" class="error-message"></div>
+    <form id="login-form">
+        <input type="text" id="username" placeholder="Username/Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+    <p>Nu ai un cont? <a href="register.html">Sign Up</a></p>
+</div>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/big-integer/1.6.48/BigInteger.min.js"></script>
+
+<script>
+    // Logica JavaScript pentru gestionarea formularului de autentificare
+    const loginForm = document.getElementById('login-form');
+    const errorMessage = document.getElementById('error-message');
+    let G;
+
+    async function getG() {
+        const response = await fetch('http://localhost:8085/voteup/api/getG').catch(error => {
+            alert('Serverul este inactiv.');
+        });
+        const data = await response.json();
+        G = data;
+    }
+
+    getG()
+
+    loginForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        const apiUrl = `http://localhost:8085/voteup/api/publicKey?email=${encodeURIComponent(username)}`;
+        const response = await fetch(apiUrl).catch(error => {
+            alert('Serverul este inactiv.');
+        });
+
+        if (response && response.status === 500) {
+            // Tratați cazul în care răspunsul are codul 500 (Eroare internă a serverului)
+            // Aici puteți afișa un mesaj de eroare sau efectua alte acțiuni relevante
+            errorMessage.textContent = 'Email invalid';
+        }
+        const data = await response.json();
+        const publicKey = data;
+        const xx = CryptoJS.SHA256(password).toString();
+        const x = bigInt(xx, 16, false, true);
+        const modulus = 1000000007;
+
+        const Y = bigInt(publicKey, 16, false, true).modPow(x, modulus)
+        const rx = G[Math.floor(Math.random() * G.length)]
+        const T1 = bigInt(publicKey, 10, false, true).modPow(rx, modulus)
+        const c1 = CryptoJS.SHA256(Y.toString() + T1.toString()).toString()
+        const cc = bigInt(c1, 16, false, true)
+        const zx = bigInt(rx, 16, false, true).subtract(cc.multiply(x)).toString()
+        const c = cc.toString()
+
+
+        fetch('http://localhost:8085/voteup/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({username, c, zx})
+        })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = 'home.html';
+                    return response.json();
+                } else {
+                    throw new Error('Date de autentificare incorecte.');
+                }
+            })
+            .then(data => {
+                const userId = data;
+                const expirationTime = new Date();
+                expirationTime.setTime(expirationTime.getTime() + 5 * 60 * 1000);
+                const expires = expirationTime.toUTCString();
+
+                document.cookie = `userId=${userId}; expires=${expires}; path=/;`;
+            })
+            .catch(error => {
+                errorMessage.textContent = error.message;
+                alert('A aparut o eroare pe server in timpul autentificarii sau serverul este inactiv.');
+            });
+    });
+</script>
+</body>
+</html>

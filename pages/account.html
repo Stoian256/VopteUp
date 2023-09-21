@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Account</title>
+    <link rel="stylesheet" type="text/css" href="../static/css/accountStyle.css">
+    <link rel="icon" href="../static/logo/logo-circle.png" type="image/png">
+</head>
+<body>
+<div class="container">
+    <aside id="sidebar">
+        <div class="logo">
+            <a href="home.html">
+                <img src="../static/logo/logo-circle.png" alt="Logo" class="logo-image">
+            </a>
+        </div>
+        <a href="home.html">
+            <i class="fa fa-home" aria-hidden="true"></i>
+            Acasa
+        </a>
+        <a href="account.html">
+            <i class="fa fa-user-o" aria-hidden="true"></i>
+            Contul meu
+        </a>
+        <a href="results.html">
+            <i class="fas fa-chart-bar" aria-hidden="true"></i>
+            Rezultate
+        </a>
+        <a href="javascript:void(0)" id="logout-link">
+            <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+            Logout
+        </a>
+    </aside>
+
+    <div class="content">
+        <h1>Informatii personale</h1>
+        <div id="error-message" class="error-message"></div>
+        <form id="account-form">
+            <label for="first-name">First Name</label>
+            <input type="text" id="first-name" placeholder="First Name" required>
+
+            <label for="last-name">Last Name</label>
+            <input type="text" id="last-name" placeholder="Last Name" required>
+
+            <label for="cnp">CNP</label>
+            <input type="text" id="cnp" placeholder="CNP" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="Email" required>
+
+            <button type="submit">Update</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://kit.fontawesome.com/733e8ea598.js" crossorigin="anonymous"></script>
+<script src="/static/biblioteci/crypto-js.js"></script>
+<script src="/static/biblioteci/BigInteger.js"></script>
+<script src="../node_modules/mathjs/lib/browser/math.js"></script>
+
+<script>
+    window.addEventListener('pageshow', function () {
+        checkCookieExpired()
+    });
+
+    function isCookieExpired(cookieName) {
+        const cookies = document.cookie.split('; ');
+
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].split('=');
+            if (cookie[0] === cookieName) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function checkCookieExpired() {
+        // Verificați starea de autentificare
+        if (!isCookieExpired('userId')) {
+            // Utilizatorul este autentificat și sesiunea nu a expirat
+            console.log('Utilizatorul este autentificat');
+        } else {
+            // Utilizatorul nu este autentificat sau sesiunea a expirat, redirecționați către pagina de autentificare
+            console.log('Utilizatorul nu este autentificat sau sesiunea a expirat, redirecționare către pagina de autentificare');
+            window.location.href = 'login.html';
+        }
+    }
+
+    // Verificați starea de autentificare la intervale regulate (de exemplu, la fiecare 5 minute)
+    //const interval = setInterval(checkAuthentication, 5 * 60 * 1000); // 5 minute în milisecunde
+    checkCookieExpired()
+    const intervalCookie = setInterval(checkCookieExpired, 5 * 60 * 1000);
+
+    // Oprește verificarea automată când utilizatorul părăsește pagina
+    window.addEventListener('beforeunload', () => {
+        //clearInterval(interval);
+        clearInterval(intervalCookie);
+    });
+
+    function getCookieValue(cookieName) {
+        const cookies = document.cookie.split('; ');
+
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].split('=');
+            if (cookie[0] === cookieName) {
+                return cookie[1];
+            }
+        }
+
+        return null;
+    }
+
+    const logoutLink = document.getElementById("logout-link");
+
+    logoutLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        deleteCookie("userId");
+        window.location.href = "login.html";
+    });
+
+    function deleteCookie(name) {
+        document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    }
+
+    // Se obțin referințele către elementele formularului
+    const accountForm = document.getElementById('account-form');
+    const firstNameInput = document.getElementById('first-name');
+    const lastNameInput = document.getElementById('last-name');
+    const cnpInput = document.getElementById('cnp');
+    const emailInput = document.getElementById('email');
+
+
+    // Dezactivează toate câmpurile formularului inițial
+    firstNameInput.disabled = true;
+    lastNameInput.disabled = true;
+    cnpInput.disabled = true;
+    emailInput.disabled = true;
+
+    const userId = getCookieValue("userId");
+    if (userId) {
+        const apiUrl = `http://localhost:8085/voteup/api/users/informations?userId=${encodeURIComponent(userId)}`;
+        // Face un request către backend pentru a obține informațiile utilizatorului
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                // Pune informațiile în câmpurile formularului
+                firstNameInput.value = data.firstName;
+                lastNameInput.value = data.lastName;
+                cnpInput.value = data.cnp;
+                emailInput.value = data.email;
+
+
+                // Activează câmpurile formularului când se face clic pe formular
+                accountForm.addEventListener('click', () => {
+                    firstNameInput.disabled = false;
+                    lastNameInput.disabled = false;
+                    cnpInput.disabled = false;
+                    emailInput.disabled = false;
+                });
+            });
+    }
+    // Ascultă evenimentul de trimitere a formularului
+    accountForm.addEventListener('submit', event => {
+        event.preventDefault();
+
+        // Obține valorile din câmpurile formularului
+        const updatedFirstName = firstNameInput.value;
+        const updatedLastName = lastNameInput.value;
+        const updatedCNP = cnpInput.value;
+        const updatedEmail = emailInput.value;
+
+        // Face un request către backend pentru a actualiza informațiile utilizatorului
+        fetch('http://localhost:8085/voteup/api/update', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + userId,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                firstName: updatedFirstName,
+                lastName: updatedLastName,
+                cnp: updatedCNP,
+                email: updatedEmail
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Poți adăuga aici logica suplimentară pentru gestionarea răspunsului de la backend
+                alert('Informațiile au fost actualizate cu succes');
+            })
+            .catch(error => {
+                console.error('A apărut o eroare în timpul actualizării informațiilor utilizatorului:', error);
+            });
+    });
+
+</script>

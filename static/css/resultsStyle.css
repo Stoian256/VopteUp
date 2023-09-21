@@ -1,0 +1,16 @@
+#vote-form {
+    margin-left: 200px; /* Opțional - setați marginea de sus dorită */
+    margin-top: 20px;
+    text-align: center;
+}
+.chart-container {
+    width: 45%;  /* Setează lățimea dorită */
+    height: auto; /* Setează înălțimea dorită */
+    margin-top: 50px; /* Opțional - setați marginea de sus dorită */
+    margin-left: 200px; /* Opțional - setați marginea de sus dorită */
+}
+
+.content {
+    display: flex;
+    justify-content: center;
+}

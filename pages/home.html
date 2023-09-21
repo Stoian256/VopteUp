@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VoteUp</title>
+    <link rel="stylesheet" type="text/css" href="../static/css/style.css">
+    <link rel="icon" href="../static/logo/logo-circle.png" type="image/png">
+</head>
+<body>
+<div class="container">
+    <aside id="sidebar">
+        <div class="logo">
+            <a href="home.html">
+                <img src="../static/logo/logo-circle.png" alt="Logo" class="logo-image">
+            </a>
+        </div>
+        <a href="home.html">
+            <i class="fa fa-home" aria-hidden="true"></i>
+            Acasa
+        </a>
+        <a href="account.html">
+            <i class="fa fa-user-o" aria-hidden="true"></i>
+            Contul meu
+        </a>
+        <a href="results.html">
+            <i class="fas fa-chart-bar" aria-hidden="true"></i>
+            Rezultate
+        </a>
+        <a href="javascript:void(0)" id="logout-link">
+            <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+            Logout
+        </a>
+    </aside>
+
+    <div class="content" id="content">
+        <div class="content-wrapper">
+            <form id="verification-form">
+                <label for="document-upload" class="upload-label" id="upload-label">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <input type="file" id="document-upload" accept=".jpg, .jpeg, .png" required>
+                    <span>Incarca documentul de identitate</span>
+                </label>
+                <div id="preview-container"></div>
+                <button type="submit" class="verify-btn">Verifica identitatea</button>
+            </form>
+
+            <div id="verification-result"></div>
+            <form id="vote-form">
+                <select id="event-select"></select>
+                <div id="vote-options"></div>
+                <button type="submit" disabled="true" id="vote-button">Voteaza</button>
+            </form>
+
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="../static/script/script.js"></script>
+<script src="https://kit.fontawesome.com/733e8ea598.js" crossorigin="anonymous"></script>
+
+
+</body>
+</html>

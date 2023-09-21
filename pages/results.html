@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Results</title>
+    <link rel="stylesheet" type="text/css" href="../static/css/style.css">
+    <link rel="icon" href="../static/logo/logo-circle.png" type="image/png">
+    <link rel="stylesheet" type="text/css" href="../static/css/resultsStyle.css">
+</head>
+<body>
+<div class="container">
+    <aside id="sidebar">
+        <div class="logo">
+            <a href="home.html">
+                <img src="../static/logo/logo-circle.png" alt="Logo" class="logo-image">
+            </a>
+        </div>
+        <a href="home.html">
+            <i class="fa fa-home" aria-hidden="true"></i>
+            Acasa
+        </a>
+        <a href="account.html">
+            <i class="fa fa-user-o" aria-hidden="true"></i>
+            Contul meu
+        </a>
+        <a href="results.html">
+            <i class="fas fa-chart-bar" aria-hidden="true"></i>
+            Rezultate
+        </a>
+        <a href="javascript:void(0)" id="logout-link">
+            <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+            Logout
+        </a>
+    </aside>
+    <form id="vote-form">
+        <select id="event-select"></select>
+        <div id="vote-options"></div>
+        <button type="submit" disabled="true" id="vote-button">Voteaza</button>
+    </form>
+
+    <div class="content" id="content">
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://kit.fontawesome.com/733e8ea598.js" crossorigin="anonymous"></script>
+<script>
+    checkCookieExpired()
+    const userId = getCookieValue("userId");
+
+    const logoutLink = document.getElementById("logout-link");
+    window.addEventListener('pageshow', function () {
+        checkCookieExpired()
+    });
+
+    logoutLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        deleteCookie("userId");
+        window.location.href = "login.html";
+    });
+
+    function deleteCookie(name) {
+        document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    }
+
+    function isCookieExpired(cookieName) {
+        const cookies = document.cookie.split('; ');
+
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].split('=');
+            if (cookie[0] === cookieName) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function checkCookieExpired() {
+        if (!isCookieExpired('userId')) {
+            console.log('Utilizatorul este autentificat');
+        } else {
+            console.log('Utilizatorul nu este autentificat sau sesiunea a expirat, redirecționare către pagina de autentificare');
+            window.location.href = 'login.html';
+        }
+    }
+
+    function getCookieValue(cookieName) {
+        const cookies = document.cookie.split('; ');
+
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].split('=');
+            if (cookie[0] === cookieName) {
+                return cookie[1];
+            }
+        }
+
+        return null;
+    }
+
+    const intervalCookie = setInterval(checkCookieExpired, 10 * 60 * 1000); // 10 minute în milisecunde
+
+    // Oprește verificarea automată când utilizatorul părăsește pagina
+    window.addEventListener('beforeunload', () => {
+        //clearInterval(interval);
+        clearInterval(intervalCookie);
+    });
+
+
+    const chartConfig = {
+        type: 'pie',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',  // Culoarea feliei 1
+                    'rgba(54, 162, 235, 0.6)',  // Culoarea feliei 2
+                    'rgba(0, 255, 0, 0.6)',      // Culoarea feliei 10
+                    'rgba(0, 0, 255, 0.6)',      // Culoarea feliei 11
+                    'rgba(255, 0, 255, 0.6)',    // Culoarea feliei 12
+                    'rgba(0, 128, 255, 0.6)',    // Culoarea feliei 14
+                    'rgba(255, 206, 86, 0.6)',  // Culoarea feliei 3
+                    'rgba(75, 192, 192, 0.6)',   // Culoarea feliei 4
+                    'rgba(153, 102, 255, 0.6)',  // Culoarea feliei 5
+                    'rgba(255, 159, 64, 0.6)',   // Culoarea feliei 6
+                    'rgba(0, 128, 128, 0.6)',    // Culoarea feliei 7
+                    'rgba(128, 0, 128, 0.6)',    // Culoarea feliei 8
+                    'rgba(128, 128, 0, 0.6)',    // Culoarea feliei 9
+                    'rgba(128, 128, 128, 0.6)',  // Culoarea feliei 13
+                    'rgba(255, 0, 128, 0.6)',    // Culoarea feliei 15
+                    'rgba(0, 255, 128, 0.6)',    // Culoarea feliei 16
+                    'rgba(128, 0, 255, 0.6)',    // Culoarea feliei 17
+                    'rgba(255, 128, 0, 0.6)',    // Culoarea feliei 18
+                    'rgba(128, 255, 0, 0.6)',    // Culoarea feliei 19
+                    'rgba(0, 255, 255, 0.6)',    // Culoarea feliei 20
+                ],
+                borderColor: 'rgba(255, 255, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    };
+
+    const canvas = document.getElementById('myChart');
+    const chart = new Chart(canvas, chartConfig);
+
+    fetch('http://localhost:8085/voteup/api/voting-events')
+        .then(response => response.json())
+        .then(data => {
+            // Verifica dacă există evenimente de votare
+            if (data.length > 0) {
+                const voteForm = document.getElementById('vote-form');
+                const eventSelect = document.getElementById('event-select');
+
+                const option = document.createElement('option');
+                option.value = "";
+                option.textContent = "Selecteaza un eveniment";
+                eventSelect.appendChild(option);
+                // Adăuga opțiuni pentru evenimentele de votare
+                data.forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = event.id;
+                    option.textContent = event.name;
+                    eventSelect.appendChild(option);
+                });
+
+                const optionContainer = document.getElementById('vote-options');
+
+
+                // Manipuleaza evenimentul de schimbare a selectului de evenimente
+                eventSelect.addEventListener('change', function () {
+                    const selectedEventId = this.value;
+                    if (selectedEventId !== "") {
+                        const apiUrl = `http://localhost:8085/voteup/api/results?eventId=${selectedEventId}`;
+                        fetch(apiUrl)
+                            .then(response => response.json())
+                            .then(data => {
+
+                                data.forEach(option => {
+                                    // Extrage numele și numărul de voturi din rezultate
+                                    const numeCandidati = data.map(result => result.optionName);
+                                    const numarVoturi = data.map(result => result.votes);
+
+                                    chart.data.labels = numeCandidati;
+                                    chart.data.datasets[0].data = numarVoturi;
+                                    chart.update();
+                                });
+                            })
+                            .catch(error => {
+                                alert("Voturile au fost corupte!")
+                            });
+                    }
+                });
+            } else {
+                // Dacă nu există evenimente de votare disponibile
+                const message = document.createElement('p');
+                message.textContent = 'Nu exista evenimente de votare disponibile in prezent.';
+                document.body.appendChild(message);
+            }
+        })
+        .catch(error => {
+            const message = document.createElement('p');
+            message.textContent = 'A aparut o eroare in timpul obtinerii evenimentelor de votare.';
+            document.body.appendChild(message);
+        });
+</script>
+
+
+</body>
+</html>
